@@ -8,11 +8,11 @@
 **Prerequisites:** [PostgreSQL with Python](https://github.com/Goliath-Research/PostgreSQL-with-Python) or equivalent (SQL, transactions, roles and grants, `psql`, Docker Compose, Python 3.11+ with `pytest`). Basic HTTP/JSON. No cloud account, identity provider or domain knowledge needed.
 
 > **Status (November 2026).** All 14 module guides, four Marimo notebooks and the module test suites are
-> written and pass against the lab. Module 13 teaches GoliathApp's audit and history features, which are
-> **open GoliathApp pull requests #109–#112** (ledgers, object history, run history and retention, electronic
-> signatures), not yet merged. The lab is pinned to the head of that PR stack in
-> [`lab/GOLIATHAPP_PIN`](lab/GOLIATHAPP_PIN) and will be re-pinned to `main` once they merge. The portal
-> has no signing screen yet; signatures are exercised through the platform API.
+> written and pass against the lab. Module 13 teaches GoliathApp's audit and history features, merged in
+> **GoliathApp #109–#112** (ledgers, object history, run history and retention, electronic signatures),
+> and #113, which stores every timestamp as UTC whatever the session time zone. The lab is pinned to that
+> commit on GoliathApp `main` in [`lab/GOLIATHAPP_PIN`](lab/GOLIATHAPP_PIN). The portal has no signing
+> screen yet; signatures are exercised through the platform API.
 
 ---
 

@@ -16,7 +16,7 @@ def _():
 
         Pick an instrument: read **who changed what and when**, see the record **as of** any moment,
         list its **electronic signatures**, and verify every history ledger. Requires GoliathApp with
-        the history PR stack (#109–#112), as pinned in `lab/GOLIATHAPP_PIN`.
+        the history features merged in #109–#112, as pinned in `lab/GOLIATHAPP_PIN`.
         """
     )
     return (mo,)
@@ -34,7 +34,7 @@ def _(mo):
     mo.stop(not ok, mo.callout(mo.md(f"**Lab not ready:** {reason}"), kind="warn"))
     with cs.owner() as _conn:
         mo.stop(not cs.has_function(_conn, "portal.sp_session_sign(text,text,text,text,text)"),
-                mo.callout(mo.md("This lab runs a GoliathApp without the history features (PRs #109–#112)."), kind="warn"))
+                mo.callout(mo.md("This lab runs a GoliathApp older than the history features (#109–#112)."), kind="warn"))
         objs = {f"{d.get('Label')} (#{i})": i for i, d in _conn.execute(
             """SELECT o."ID", "Meta".fn_merged_obj_document(o."ID") FROM "Meta"."Objs" o
                JOIN "Meta"."Classes" c ON c."ID" = o."ClassID" WHERE c."Name" = 'acme_child/Instrument'

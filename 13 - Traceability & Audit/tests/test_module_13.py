@@ -23,7 +23,7 @@ def lab() -> None:
     require_lab()
     with owner() as conn:
         if not has_function(conn, "portal.sp_session_sign(text,text,text,text,text)"):
-            pytest.skip("GoliathApp without the history PR stack #109-#112; see lab/GOLIATHAPP_PIN")
+            pytest.skip("GoliathApp older than the history features #109-#112; see lab/GOLIATHAPP_PIN")
 
 
 def _new_instrument(token: str) -> int:
@@ -97,3 +97,24 @@ def test_sign_detect_change_and_protect() -> None:
 def test_ledgers_verify_clean() -> None:
     with owner() as conn:
         assert conn.execute("SELECT * FROM portal.fn_ledger_verify_all()").fetchall() == []
+
+
+def test_history_times_are_utc_instants_in_any_session_time_zone() -> None:
+    """GoliathApp #113: timestamps are true instants, even from a session far from UTC."""
+    with owner() as conn:
+        if not has_function(conn, "portal.fn_utc_timestamp_violations()"):
+            pytest.skip("GoliathApp older than the UTC timestamp fix #113; see lab/GOLIATHAPP_PIN")
+        assert conn.execute("SELECT count(*) FROM portal.fn_utc_timestamp_violations()").fetchone()[0] == 0
+    token = open_session("operator", role="acme_child_operator")
+    with portal() as conn:
+        conn.execute("SET TIME ZONE 'Pacific/Kiritimati'")
+        obj = int(conn.execute(
+            "SELECT portal.sp_session_meta_obj_insert(%s, 'acme_child/Instrument', %s)",
+            (token, Jsonb({"Label": "Module 13 UTC check", "SerialNumber": f"ACME-UTC-{uuid.uuid4().hex[:6]}"})),
+        ).fetchone()[0])
+    with owner() as conn:
+        drift = conn.execute(
+            'SELECT max(abs(extract(epoch FROM h."ChangedAtUtc" - now()))) FROM "Meta"."ObjValuesHistory" h WHERE h."ObjID" = %s',
+            (obj,),
+        ).fetchone()[0]
+    assert drift is not None and float(drift) < 300
