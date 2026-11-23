@@ -1,0 +1,5 @@
+# GoliathApp revision this course is tested against.
+# Pinned to the head of the open history PR stack (GoliathApp #109 -> #110 -> #111 -> #112).
+# After those PRs merge, re-pin to the resulting commit on main.
+repository=https://github.com/Goliath-Research/GoliathApp.git
+commit=c13217dbda4820e5861bf84b1378e8ab3d26f69a
