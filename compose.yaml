@@ -1,0 +1,29 @@
+name: goliathapp-course-lab
+
+services:
+  postgres:
+    # Academy standard: PostgreSQL 19. GoliathApp CI also tests PostgreSQL 18 and 19.
+    image: postgres:19-bookworm
+    container_name: goliathapp_course_lab
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lab_bootstrap_superuser_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-goliathapp_lab}
+      TZ: UTC
+      PGTZ: UTC
+    # Loopback only: the lab is never exposed on your network.
+    ports:
+      - "127.0.0.1:${PG_HOST_PORT:-54339}:5432"
+    volumes:
+      - goliathapp_course_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-goliathapp_lab}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  goliathapp_course_pgdata:
+    name: goliathapp_course_pgdata

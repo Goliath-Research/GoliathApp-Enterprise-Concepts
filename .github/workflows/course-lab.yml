@@ -1,0 +1,85 @@
+name: course-lab
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install PostgreSQL 19 client (PGDG)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-19
+          echo "/usr/lib/postgresql/19/bin" >> "$GITHUB_PATH"
+
+      - name: Course environment
+        run: |
+          cp .env.example .env
+          python -m pip install -U pip
+          python -m pip install -e .
+
+      - name: Offline checks (no database)
+        run: |
+          python -m pytest -q "10 - Distributed Workers & Leases"
+          for nb in */[0-9][0-9]_*.py; do python -m marimo check "$nb"; done
+
+      - name: Start the lab (compose.yaml, postgres:19-bookworm)
+        run: python course_lab.py up
+
+      - name: Build the lab with GoliathApp's official scripts
+        run: python course_lab.py setup
+
+      - name: Re-run setup (must be idempotent)
+        run: python course_lab.py setup && python course_lab.py status
+
+      - name: Module suites
+        run: python -m pytest -q -rs --ignore=tests
+
+      - name: Build the GoliathApp portal
+        working-directory: .lab/GoliathApp
+        run: npm ci --no-audit --no-fund && npm run build
+
+      - name: Start the portal against the lab
+        working-directory: .lab/GoliathApp/apps/platform-host
+        run: |
+          set -a; . ../../../lab.env; set +a
+          PGHOST=127.0.0.1 PGPORT=54339 PGDATABASE=goliathapp_lab PGSSLMODE=disable \
+          GOLIATH_PORTAL_PASSWORD=lab_portal_pw_change_me \
+          GOLIATH_PLATFORM_HOST_DEV_LOGIN=1 GOLIATH_PLATFORM_HOST_DEV_LOGIN_SECRET=ci-course-lab-only \
+          GOLIATH_P1_DEV_LOGIN_USER_ID="$COURSE_OPERATOR_USER_ID" \
+          nohup npx next dev --port 3410 > "$RUNNER_TEMP/portal.log" 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3410/api/health > /dev/null; then echo "portal up"; exit 0; fi
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/portal.log"; exit 1
+
+      - name: Portal tests
+        env:
+          COURSE_PORTAL_URL: http://127.0.0.1:3410
+          COURSE_PORTAL_DEV_LOGIN_SECRET: ci-course-lab-only
+        run: python -m pytest -q -rs tests
+
+      - name: Portal log
+        if: always()
+        run: cat "$RUNNER_TEMP/portal.log" 2>/dev/null || true

@@ -1,0 +1,4 @@
+# GoliathApp revision this course is tested against.
+# GoliathApp main after the history stack (#109-#112) and the UTC timestamp fix (#113) merged.
+repository=https://github.com/Goliath-Research/GoliathApp.git
+commit=b2a4f5528147c32d7ab04a0c764c3a7a44353260

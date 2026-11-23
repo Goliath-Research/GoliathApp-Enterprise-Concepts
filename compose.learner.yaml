@@ -1,0 +1,25 @@
+# One private lab per learner on a shared course machine. course_lab.py starts it with
+#   docker compose -p goliathapp-<user> -f compose.learner.yaml up -d
+# and a free loopback port in LEARNER_PG_PORT. Each learner gets their own volume and roles.
+services:
+  postgres:
+    image: postgres:19-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set by course_lab.py}
+      POSTGRES_DB: goliathapp_lab
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "127.0.0.1:${LEARNER_PG_PORT:?set by course_lab.py}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d goliathapp_lab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pgdata:
